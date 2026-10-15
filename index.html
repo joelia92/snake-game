@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🐍 Juego de la Serpiente</title>
+    <title>🐍 Juego 3D - Serpiente Cartoon</title>
     <style>
         * {
             margin: 0;
@@ -61,6 +61,7 @@
             border-radius: 8px;
             background: #000;
             max-width: 100%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 20px rgba(0, 255, 100, 0.1);
         }
 
         .controls {
@@ -164,8 +165,8 @@
 </head>
 <body>
     <div class="start-screen" id="startScreen">
-        <h1>🐍 Juego de la Serpiente</h1>
-        <p>Usa las flechas del teclado para mover la serpiente</p>
+        <h1>🐍 Juego 3D Serpiente</h1>
+        <p>Usa flechas o WASD para mover la serpiente cartoon</p>
         <button id="startBtn">▶ Iniciar Juego</button>
     </div>
 
@@ -175,16 +176,16 @@
         <button id="restartBtn">🔄 Jugar de Nuevo</button>
     </div>
 
-    <h1>🐍 Juego de la Serpiente</h1>
+    <h1>🐍 Juego 3D Serpiente</h1>
 
     <div class="game-container">
         <div class="stats">
             <span>🍎 Puntuación: <span id="score" class="value">0</span></span>
             <span>🏆 Mejor: <span id="bestScore" class="value">0</span></span>
         </div>
-        <canvas id="gameCanvas" width="400" height="400"></canvas>
+        <canvas id="gameCanvas" width="500" height="500"></canvas>
         <div class="controls">
-            Controles: <kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd> o <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>
+            <kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd> o <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>
         </div>
     </div>
 
@@ -197,113 +198,286 @@
         const finalScoreEl = document.getElementById('finalScore');
         const startScreen = document.getElementById('startScreen');
 
-        const GRID_SIZE = 20;
-        const TILE_COUNT = canvas.width / GRID_SIZE;
-        const GAME_SPEED = 100;
+        const GRID = 20;
+        const COLS = Math.floor(canvas.width / GRID) - 1;
+        const ROWS = Math.floor(canvas.height / GRID) - 1;
+        const SPEED = 120;
 
         let snake = [];
-        let food = {};
-        let dx = 0;
-        let dy = 0;
+        let food = null;
+        let dirX = 1, dirY = 0;
         let score = 0;
-        let bestScore = localStorage.getItem('snakeBestScore') || 0;
-        let gameRunning = false;
-        let gameLoop = null;
+        let bestScore = parseInt(localStorage.getItem('snake3dBest') || '0');
+        let running = false;
+        let loop = null;
+        let animFrame = 0;
 
         bestScoreEl.textContent = bestScore;
 
         function init() {
             snake = [
-                { x: 10, y: 10 },
-                { x: 9, y: 10 },
-                { x: 8, y: 10 }
+                { x: Math.floor(COLS/2), y: Math.floor(ROWS/2) },
+                { x: Math.floor(COLS/2)-1, y: Math.floor(ROWS/2) },
+                { x: Math.floor(COLS/2)-2, y: Math.floor(ROWS/2) }
             ];
             score = 0;
             scoreEl.textContent = score;
-            dx = 1;
-            dy = 0;
-            generateFood();
+            dirX = 1; dirY = 0;
+            placeFood();
         }
 
-        function generateFood() {
-            food = {
-                x: Math.floor(Math.random() * TILE_COUNT),
-                y: Math.floor(Math.random() * TILE_COUNT)
-            };
-            for (let segment of snake) {
-                if (segment.x === food.x && segment.y === food.y) {
-                    generateFood();
-                    break;
+        function placeFood() {
+            let valid = false;
+            while (!valid) {
+                food = {
+                    x: Math.floor(Math.random() * COLS),
+                    y: Math.floor(Math.random() * ROWS),
+                    size: 0.8 + Math.random() * 0.4,
+                    rot: Math.random() * Math.PI * 2
+                };
+                valid = !snake.some(s => s.x === food.x && s.y === food.y);
+            }
+        }
+
+        function drawGrid3D() {
+            const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            grad.addColorStop(0, '#1a1a2e');
+            grad.addColorStop(1, '#0a0a15');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const offsetX = canvas.width * 0.05;
+            const offsetY = canvas.height * 0.15;
+            
+            for (let y = 0; y < ROWS; y++) {
+                for (let x = 0; x < COLS; x++) {
+                    const px = offsetX + (x - y) * (GRID * 0.5);
+                    const py = offsetY + (x + y) * (GRID * 0.25);
+                    const depth = 1 - (x + y) / (COLS + ROWS);
+                    
+                    ctx.fillStyle = `rgba(30, 40, 60, ${0.3 + depth * 0.3})`;
+                    ctx.beginPath();
+                    ctx.moveTo(px, py);
+                    ctx.lineTo(px + GRID * 0.5, py + GRID * 0.25);
+                    ctx.lineTo(px + GRID * 0.5 - GRID * 0.5, py + GRID * 0.25 + GRID * 0.25);
+                    ctx.lineTo(px - GRID * 0.5, py + GRID * 0.25);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    ctx.strokeStyle = 'rgba(50, 60, 80, 0.3)';
+                    ctx.lineWidth = 0.5;
+                    ctx.stroke();
                 }
             }
         }
 
-        function draw() {
-            ctx.fillStyle = '#000';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        function drawFood3D() {
+            const cx = canvas.width/2 + (food.x - food.y) * (GRID * 0.4);
+            const cy = canvas.height/2 + (food.x + food.y) * (GRID * 0.2) - 20;
+            const s = GRID * food.size * 0.4;
+            
+            ctx.fillStyle = 'rgba(0,0,0,0.4)';
+            ctx.beginPath();
+            ctx.ellipse(cx + 5, cy + 10, s * 0.8, s * 0.3, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            const grad = ctx.createRadialGradient(cx - s*0.3, cy - s*0.3, 0, cx, cy, s);
+            grad.addColorStop(0, '#ff6b6b');
+            grad.addColorStop(0.7, '#ee4444');
+            grad.addColorStop(1, '#bb2222');
+            
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(cx, cy, s, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.beginPath();
+            ctx.arc(cx - s*0.25, cy - s*0.25, s*0.2, 0, Math.PI*2);
+            ctx.fill();
+            
+            ctx.strokeStyle = '#4a7c3f';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - s);
+            ctx.quadraticCurveTo(cx + 5, cy - s - 8, cx + 3, cy - s - 12);
+            ctx.stroke();
+        }
 
-            ctx.fillStyle = '#ff4444';
-            ctx.fillRect(food.x * GRID_SIZE, food.y * GRID_SIZE, GRID_SIZE - 1, GRID_SIZE - 1);
-
-            for (let i = 0; i < snake.length; i++) {
-                ctx.fillStyle = i === 0 ? '#00ff64' : '#00cc52';
-                ctx.fillRect(snake[i].x * GRID_SIZE, snake[i].y * GRID_SIZE, GRID_SIZE - 1, GRID_SIZE - 1);
+        function drawSnake3D() {
+            const baseX = canvas.width/2;
+            const baseY = canvas.height/2 - 30;
+            
+            for (let i = snake.length - 1; i >= 0; i--) {
+                const seg = snake[i];
+                const t = i / Math.max(snake.length - 1, 1);
+                const x = baseX + (seg.x - seg.y) * (GRID * 0.35) * (1 - t * 0.2);
+                const y = baseY + (seg.x + seg.y) * (GRID * 0.17) * (1 - t * 0.15) - i * 2;
+                const scale = 1 - t * 0.15;
+                const wiggle = Math.sin(animFrame * 0.1 + i * 0.5) * 2 * (1 - t);
+                
+                if (i === 0) {
+                    drawHead3D(x + wiggle, y, scale);
+                } else if (i === 1 || i === 2) {
+                    drawBodySegment3D(x + wiggle, y, scale, '#d4a574', '#b8865a', t);
+                } else {
+                    drawBodySegment3D(x + wiggle, y, scale, '#c49464', '#a8764a', t);
+                }
             }
+            
+            if (snake.length >= 2) {
+                const tail = snake[snake.length - 1];
+                const tx = baseX + (tail.x - tail.y) * (GRID * 0.35) * 0.6;
+                const ty = baseY + (tail.x + tail.y) * (GRID * 0.17) * 0.6 - (snake.length-1) * 2 + 5;
+                
+                const bounce = Math.sin(animFrame * 0.08) * 3;
+                const squish = Math.sin(animFrame * 0.12) * 2;
+                
+                drawBall3D(tx - 8 + squish, ty + bounce, 7, '#e8b89a', '#c4866a');
+                drawBall3D(tx + 8 - squish, ty - bounce, 7, '#e8b89a', '#c4866a');
+            }
+        }
+
+        function drawHead3D(x, y, scale) {
+            const h = GRID * 0.7 * scale;
+            const w = GRID * 0.5 * scale;
+            
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.beginPath();
+            ctx.ellipse(x + 4, y + h + 6, w, h*0.3, 0, 0, Math.PI*2);
+            ctx.fill();
+            
+            const grad = ctx.createLinearGradient(x - w/2, y, x + w/2, y);
+            grad.addColorStop(0, '#f5c6a0');
+            grad.addColorStop(0.5, '#e8b89a');
+            grad.addColorStop(1, '#d4a080');
+            
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.ellipse(x, y, w, h, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.strokeStyle = '#c49070';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            ctx.fillStyle = '#2d1810';
+            ctx.beginPath();
+            ctx.arc(x - w*0.3, y - h*0.2, 3 * scale, 0, Math.PI * 2);
+            ctx.arc(x + w*0.3, y - h*0.2, 3 * scale, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(x - w*0.3 - 1, y - h*0.2 - 1, 1.2 * scale, 0, Math.PI*2);
+            ctx.arc(x + w*0.3 - 1, y - h*0.2 - 1, 1.2 * scale, 0, Math.PI*2);
+            ctx.fill();
+            
+            ctx.strokeStyle = '#8b5a3c';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(x, y + h*0.15, w*0.3, 0.2, Math.PI - 0.2);
+            ctx.stroke();
+        }
+
+        function drawBodySegment3D(x, y, scale, color1, color2, t) {
+            const w = GRID * 0.45 * scale;
+            const h = GRID * 0.6 * scale;
+            
+            ctx.fillStyle = 'rgba(0,0,0,0.2)';
+            ctx.beginPath();
+            ctx.ellipse(x + 3, y + h*0.5 + 4, w*0.8, h*0.25, 0, 0, Math.PI*2);
+            ctx.fill();
+            
+            const grad = ctx.createRadialGradient(x - w*0.2, y - h*0.2, 0, x, y, w);
+            grad.addColorStop(0, color1);
+            grad.addColorStop(1, color2);
+            
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.ellipse(x, y, w, h, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.strokeStyle = 'rgba(180, 130, 90, 0.5)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+
+        function drawBall3D(x, y, r, color1, color2) {
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.beginPath();
+            ctx.ellipse(x + 2, y + r + 4, r*0.7, r*0.3, 0, 0, Math.PI*2);
+            ctx.fill();
+            
+            const grad = ctx.createRadialGradient(x - r*0.3, y - r*0.3, 0, x, y, r);
+            grad.addColorStop(0, '#f5c8a8');
+            grad.addColorStop(0.6, color1);
+            grad.addColorStop(1, color2);
+            
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.strokeStyle = 'rgba(160, 100, 70, 0.4)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            
+            ctx.fillStyle = 'rgba(255,255,255,0.35)';
+            ctx.beginPath();
+            ctx.arc(x - r*0.25, y - r*0.3, r*0.25, 0, Math.PI*2);
+            ctx.fill();
+        }
+
+        function draw() {
+            drawGrid3D();
+            drawFood3D();
+            drawSnake3D();
         }
 
         function move() {
-            const head = { x: snake[0].x + dx, y: snake[0].y + dy };
-
-            if (head.x < 0 || head.x >= TILE_COUNT || head.y < 0 || head.y >= TILE_COUNT ||
-                snake.some(segment => segment.x === head.x && segment.y === head.y)) {
+            const head = { x: snake[0].x + dirX, y: snake[0].y + dirY };
+            
+            if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS ||
+                snake.some(s => s.x === head.x && s.y === head.y)) {
                 gameOver();
                 return;
             }
-
+            
             snake.unshift(head);
-
+            
             if (head.x === food.x && head.y === food.y) {
                 score += 10;
                 scoreEl.textContent = score;
-                generateFood();
+                placeFood();
             } else {
                 snake.pop();
             }
-
+            
             draw();
+            animFrame++;
         }
 
         function gameOver() {
-            gameRunning = false;
-            clearInterval(gameLoop);
+            running = false;
+            clearInterval(loop);
             if (score > bestScore) {
                 bestScore = score;
-                localStorage.setItem('snakeBestScore', bestScore);
+                localStorage.setItem('snake3dBest', bestScore);
                 bestScoreEl.textContent = bestScore;
             }
             finalScoreEl.textContent = score;
             gameOverEl.classList.add('show');
         }
 
-        function changeDirection(event) {
-            const key = event.key.toLowerCase();
-            const goingUp = dy === -1;
-            const goingDown = dy === 1;
-            const goingRight = dx === 1;
-            const goingLeft = dx === -1;
-
-            if (key === 'arrowup' || key === 'w') {
-                if (!goingDown) { dx = 0; dy = -1; }
-            }
-            if (key === 'arrowdown' || key === 's') {
-                if (!goingUp) { dx = 0; dy = 1; }
-            }
-            if (key === 'arrowleft' || key === 'a') {
-                if (!goingRight) { dx = -1; dy = 0; }
-            }
-            if (key === 'arrowright' || key === 'd') {
-                if (!goingLeft) { dx = 1; dy = 0; }
-            }
+        function changeDir(key) {
+            const k = key.toLowerCase();
+            const up = dirY === -1, down = dirY === 1, right = dirX === 1, left = dirX === -1;
+            
+            if (k === 'arrowup' || k === 'w') { if (!down) { dirX = 0; dirY = -1; } }
+            if (k === 'arrowdown' || k === 's') { if (!up) { dirX = 0; dirY = 1; } }
+            if (k === 'arrowleft' || k === 'a') { if (!right) { dirX = -1; dirY = 0; } }
+            if (k === 'arrowright' || k === 'd') { if (!left) { dirX = 1; dirY = 0; } }
         }
 
         function startGame() {
@@ -311,18 +485,20 @@
             gameOverEl.classList.remove('show');
             init();
             draw();
-            gameRunning = true;
-            gameLoop = setInterval(move, GAME_SPEED);
+            running = true;
+            animFrame = 0;
+            loop = setInterval(move, SPEED);
         }
 
         document.getElementById('startBtn').addEventListener('click', startGame);
         document.getElementById('restartBtn').addEventListener('click', startGame);
 
-        document.addEventListener('keydown', (e) => {
-            if (!gameRunning) return;
-            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd'].includes(e.key.toLowerCase())) {
+        document.addEventListener('keydown', e => {
+            const k = e.key.toLowerCase();
+            if (!running) return;
+            if (['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d'].includes(k)) {
                 e.preventDefault();
-                changeDirection(e);
+                changeDir(k);
             }
         });
     </script>

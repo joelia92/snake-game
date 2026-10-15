@@ -1,53 +1,32 @@
-# 🐍 Juego de la Serpiente
+# 🐍🧠 Juego 3D Serpiente Cartoon
 
-Un juego clásico de la serpiente (Snake) desarrollado en HTML, CSS y JavaScript puro. No requiere instalación de ninguna dependencia.
+Juego de la serpiente isometrico 3D con estilos cartoon. Hecho en HTML+JS sin dependencias.
 
 ## 🎮 Cómo jugar
 
-1. Abre el archivo `index.html` en tu navegador
-2. Haz clic en "Iniciar Juego"
-3. Usa las **flechas del teclado** o **WASD** para mover la serpiente
+1. Abre `index.html` en tu navegador
+2. Click en "Iniciar Juego"
+3. Usa **flechas** o **WASD** para mover la serpiente cartoon
 4. Come las manzanas 🍎 para crecer y sumar puntos
-5. ¡No choques con las paredes ni con tu propio cuerpo!
+5. ¡No te choques con las paredes ni contigo mismo!
 
 ## 🌟 Características
 
-- **Simples controles**: Flechas o WASD
-- **Puntuación en tiempo real**: Sigue tu progreso
-- **Mejor puntuación guardada**: Tu récord se guarda en el navegador (localStorage)
-- **Diseño moderno**: Interfaz con gradientes y efectos visuales
-- **100% autocontenido**: Un solo archivo, sin dependencias
-
-## 📁 Estructura del proyecto
-
-```
-snake-game/
-├── index.html      # Juego completo (HTML + CSS + JavaScript)
-└── README.md       # Este archivo
-```
-
-## 🚀 Cómo ejecutar
-
-Solo necesitas abrir el archivo `index.html` en cualquier navegador web moderno:
-
-```bash
-# Desde la terminal, si tienes un servidor simple:
-cd snake-game
-python3 -m http.server 8000
-# Luego abre http://localhost:8000 en tu navegador
-```
-
-O simplemente haz doble clic en `index.html` para abrirlo directamente.
+- **Efectos 3D isometricos**: piso en perspectiva, sombras, profundidad
+- **Serpiente cartoon stylizada**: cabeza tubular con ojitos, cuerpo segmentado, y dos "bolitas" animadas abajo
+- **Animaciones**: la serpiente se mueve, las bolas rebotan
+- **Puntuación y record localStorage**
+- **1 archivo, sin dependencias**
 
 ## 🎯 Controles
 
 | Tecla | Acción |
 |-------|--------|
-| ↑ o W | Mover hacia arriba |
-| ↓ o S | Mover hacia abajo |
-| ← o A | Mover hacia la izquierda |
-| → o D | Mover hacia la derecha |
+| ↑ o W | Arriba |
+| ↓ o S | Abajo |
+| ← o A | Izquierda |
+| → o D | Derecha |
 
 ## ©️ Desarrollado por
 
-Creado con fines educativos y de entretenimiento.
+Juego de entretenimiento.
