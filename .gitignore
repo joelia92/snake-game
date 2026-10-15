@@ -1,0 +1,4 @@
+# No agregues archivos de lógica de negocio confidenciales aquí. Git rastrea los que ves en el sistema de archivos.
+*.log
+.DS_Store
+Thumbs.db
